@@ -1,6 +1,6 @@
 from xml.etree import ElementTree as ET
 from datetime import datetime as DT
-from math import sin, cos, asin, sqrt, radians, atan2, degrees
+from math import sin, cos, asin, sqrt, radians, atan2, degrees, exp, tan
 import matplotlib.pyplot as plt
 
 
@@ -21,6 +21,10 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 
+def tobler(theta):
+    return 10 * exp(-3.5 * abs(tan(radians(theta)) + 0.05))
+
+
 tree = ET.parse('squires-castle-willoughby-hills-oh-usa.gpx')
 root = tree.getroot()
 
@@ -30,6 +34,8 @@ lat = list()  # in decimal degrees
 lon = list()  # in decimal degrees
 ele = list()  # in meters
 time = list()
+speed_kmh = list()
+slope_deg = list()
 
 for trkpt in root.iter(prefix + 'trkpt'):
     lat.append(float(trkpt.attrib['lat']))
@@ -43,7 +49,10 @@ for i in range(1, len(lat)):
     dtime = (time[i] - time[i - 1]).seconds
     dele = ele[i] - ele[i - 1]
 
-    speed_kmh = ddist/dtime * 3600
-    slope_deg = degrees(atan2(dele, ddist*1000))
+    speed_kmh.append(ddist/dtime * 3600)
+    slope_deg.append(degrees(atan2(dele, ddist*1000)))
 
-    print(ddist*1000, dtime, dele, speed_kmh, slope_deg)
+tobler_kmh = list(map(tobler, slope_deg))
+plt.plot(slope_deg, speed_kmh, 'ro')
+plt.plot(slope_deg, tobler_kmh, 'bo')
+plt.show()
