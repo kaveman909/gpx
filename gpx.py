@@ -6,6 +6,9 @@ import scipy.optimize as op
 import numpy as np
 import random
 
+speed_filter = 100  # km/h max
+slope_filter = 100  # deg max
+
 
 def haversine(lon1, lat1, lon2, lat2):
     """
@@ -44,7 +47,8 @@ speed_kmh = list()
 slope_deg = list()
 speed_kmh_ind = list()
 slope_deg_ind = list()
-
+name_colors = dict()
+i = 0
 for trk in root.iter(prefix + 'trk'):
     speed_kmh_ind.clear()
     slope_deg_ind.clear()
@@ -52,6 +56,13 @@ for trk in root.iter(prefix + 'trk'):
     lon.clear()
     ele.clear()
     time.clear()
+    name = trk.find(prefix + 'name').text
+    try:
+        color = name_colors[name]
+    except KeyError:
+        name_colors[name] = 'C{}'.format(i)
+        i += 1
+        color = name_colors[name]
     for trkpt in trk.iter(prefix + 'trkpt'):
         lat.append(float(trkpt.attrib['lat']))
         lon.append(float(trkpt.attrib['lon']))
@@ -65,14 +76,15 @@ for trk in root.iter(prefix + 'trk'):
         dele = ele[i] - ele[i - 1]
 
         speed_kmh_temp = ddist/dtime * 3600
-        if speed_kmh_temp < 20:
+        slope_deg_temp = degrees(atan2(dele, ddist*1000))
+        if (speed_kmh_temp < speed_filter) and (abs(slope_deg_temp) < slope_filter):
             speed_kmh.append(speed_kmh_temp)
             speed_kmh_ind.append(speed_kmh_temp)
-            slope_deg.append(degrees(atan2(dele, ddist*1000)))
-            slope_deg_ind.append(degrees(atan2(dele, ddist*1000)))
+            slope_deg.append(slope_deg_temp)
+            slope_deg_ind.append(slope_deg_temp)
 
-    plt.plot(slope_deg_ind, speed_kmh_ind, c=tuple([random.randrange(0, 10)/10 for _ in range(3)]),
-             marker='o', ms=1, ls="")
+    plt.plot(slope_deg_ind, speed_kmh_ind, c=color,
+             marker='o', label=name, ms=1, ls="")
 
 slope_deg_x = np.array(slope_deg)
 speed_kmh_y = np.array(speed_kmh)
