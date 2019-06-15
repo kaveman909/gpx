@@ -2,11 +2,13 @@ from xml.etree import ElementTree as ET
 from datetime import datetime as DT
 from math import sin, cos, asin, sqrt, radians, atan2, degrees, exp, tan
 import matplotlib.pyplot as plt
+import scipy.optimize as op
+import numpy as np
 
 
 def haversine(lon1, lat1, lon2, lat2):
     """
-    Calculate the great circle distance between two points 
+    Calculate the great circle distance between two points
     on the earth (specified in decimal degrees)
     """
     # convert decimal degrees to radians
@@ -21,8 +23,11 @@ def haversine(lon1, lat1, lon2, lat2):
     return c * r
 
 
-def tobler(theta):
-    return 10 * exp(-3.5 * abs(tan(radians(theta)) + 0.05))
+def tobler(thetas, a, b, c):
+    y = list()
+    for theta in thetas:
+        y.append(a * exp(-b * abs(tan(radians(theta)) + c)))
+    return np.array(y)
 
 
 tree = ET.parse('Tracks.gpx')
@@ -55,7 +60,23 @@ for trk in root.iter(prefix + 'trk'):
             speed_kmh.append(speed_kmh_temp)
             slope_deg.append(degrees(atan2(dele, ddist*1000)))
 
-tobler_kmh = list(map(tobler, slope_deg))
-plt.plot(slope_deg, speed_kmh, 'ro')
-plt.plot(slope_deg, tobler_kmh, 'bo')
+slope_deg_x = np.array(slope_deg)
+speed_kmh_y = np.array(speed_kmh)
+initial_guess = np.array([6, 3.5, 0.05])  # default params of tobler function
+
+popt, pcov = op.curve_fit(tobler, slope_deg_x,
+                          speed_kmh_y, p0=initial_guess)
+
+print('Number of data points: {}'.format(len(slope_deg)))
+
+perr = np.sqrt(np.diag(pcov))
+print('Error: {}'.format(perr))
+tobler_kmh = list(tobler(slope_deg_x, *popt))
+
+plt.plot(slope_deg, speed_kmh, 'ro', label='data', markersize=1)
+plt.plot(slope_deg, tobler_kmh, 'bo',
+         label='fit : a=%5.3f, b=%5.3f, c=%5.3f' % tuple(popt), markersize=1)
+plt.xlabel('slope (deg)')
+plt.ylabel('speed (km/h)')
+plt.legend()
 plt.show()
