@@ -25,7 +25,7 @@ def tobler(theta):
     return 10 * exp(-3.5 * abs(tan(radians(theta)) + 0.05))
 
 
-tree = ET.parse('squires-castle-willoughby-hills-oh-usa.gpx')
+tree = ET.parse('Tracks.gpx')
 root = tree.getroot()
 
 prefix = '{http://www.topografix.com/GPX/1/1}'
@@ -37,20 +37,23 @@ time = list()
 speed_kmh = list()
 slope_deg = list()
 
-for trkpt in root.iter(prefix + 'trkpt'):
-    lat.append(float(trkpt.attrib['lat']))
-    lon.append(float(trkpt.attrib['lon']))
-    ele.append(float(trkpt.find(prefix + 'ele').text))
-    time.append(DT.strptime(trkpt.find(
-        prefix + 'time').text, '%Y-%m-%dT%H:%M:%SZ'))
+for trk in root.iter(prefix + 'trk'):
+    for trkpt in trk.iter(prefix + 'trkpt'):
+        lat.append(float(trkpt.attrib['lat']))
+        lon.append(float(trkpt.attrib['lon']))
+        ele.append(float(trkpt.find(prefix + 'ele').text))
+        time.append(DT.strptime(trkpt.find(
+            prefix + 'time').text, '%Y-%m-%dT%H:%M:%SZ'))
 
-for i in range(1, len(lat)):
-    ddist = haversine(lon[i - 1], lat[i - 1], lon[i], lat[i])
-    dtime = (time[i] - time[i - 1]).seconds
-    dele = ele[i] - ele[i - 1]
+    for i in range(1, len(lat)):
+        ddist = haversine(lon[i - 1], lat[i - 1], lon[i], lat[i])
+        dtime = (time[i] - time[i - 1]).seconds
+        dele = ele[i] - ele[i - 1]
 
-    speed_kmh.append(ddist/dtime * 3600)
-    slope_deg.append(degrees(atan2(dele, ddist*1000)))
+        speed_kmh_temp = ddist/dtime * 3600
+        if speed_kmh_temp < 20:
+            speed_kmh.append(speed_kmh_temp)
+            slope_deg.append(degrees(atan2(dele, ddist*1000)))
 
 tobler_kmh = list(map(tobler, slope_deg))
 plt.plot(slope_deg, speed_kmh, 'ro')
