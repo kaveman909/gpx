@@ -4,6 +4,7 @@ from math import sin, cos, asin, sqrt, radians, atan2, degrees, exp, tan
 import matplotlib.pyplot as plt
 import scipy.optimize as op
 import numpy as np
+import random
 
 
 def haversine(lon1, lat1, lon2, lat2):
@@ -41,8 +42,16 @@ ele = list()  # in meters
 time = list()
 speed_kmh = list()
 slope_deg = list()
+speed_kmh_ind = list()
+slope_deg_ind = list()
 
 for trk in root.iter(prefix + 'trk'):
+    speed_kmh_ind.clear()
+    slope_deg_ind.clear()
+    lat.clear()
+    lon.clear()
+    ele.clear()
+    time.clear()
     for trkpt in trk.iter(prefix + 'trkpt'):
         lat.append(float(trkpt.attrib['lat']))
         lon.append(float(trkpt.attrib['lon']))
@@ -58,7 +67,13 @@ for trk in root.iter(prefix + 'trk'):
         speed_kmh_temp = ddist/dtime * 3600
         if speed_kmh_temp < 20:
             speed_kmh.append(speed_kmh_temp)
+            speed_kmh_ind.append(speed_kmh_temp)
             slope_deg.append(degrees(atan2(dele, ddist*1000)))
+            slope_deg_ind.append(degrees(atan2(dele, ddist*1000)))
+
+    print(len(speed_kmh_ind))
+    plt.plot(slope_deg_ind, speed_kmh_ind, c=tuple([random.randrange(0, 10)/10 for _ in range(3)]),
+             marker='o', ms=1, ls="")
 
 slope_deg_x = np.array(slope_deg)
 speed_kmh_y = np.array(speed_kmh)
@@ -73,9 +88,8 @@ perr = np.sqrt(np.diag(pcov))
 print('Error: {}'.format(perr))
 tobler_kmh = list(tobler(slope_deg_x, *popt))
 
-plt.plot(slope_deg, speed_kmh, 'ro', label='data', markersize=1)
 plt.plot(slope_deg, tobler_kmh, 'bo',
-         label='fit : a=%5.3f, b=%5.3f, c=%5.3f' % tuple(popt), markersize=1)
+         label='fit : a=%5.3f, b=%5.3f, c=%5.3f' % tuple(popt), ms=1)
 plt.xlabel('slope (deg)')
 plt.ylabel('speed (km/h)')
 plt.legend()
