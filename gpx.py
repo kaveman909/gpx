@@ -71,7 +71,6 @@ for trk in root.iter(prefix + 'trk'):
             slope_deg.append(degrees(atan2(dele, ddist*1000)))
             slope_deg_ind.append(degrees(atan2(dele, ddist*1000)))
 
-    print(len(speed_kmh_ind))
     plt.plot(slope_deg_ind, speed_kmh_ind, c=tuple([random.randrange(0, 10)/10 for _ in range(3)]),
              marker='o', ms=1, ls="")
 
